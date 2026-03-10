@@ -1,0 +1,3 @@
+[submodule "evals/olmes"]
+	path = evals/olmes
+	url = https://github.com/owos/olmes.git
