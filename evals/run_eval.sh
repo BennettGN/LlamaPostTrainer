@@ -1,7 +1,6 @@
 #!/bin/bash
 
 #This part is need for OSC users
-source /fs/scratch/xxxx/${USER}/experiments/TA/.venv/bin/activate
 export CC=gcc
 export CXX=g++
 export TRITON_CACHE_DIR=/fs/scratch/xxxx/${USER}/triton_cache
@@ -25,7 +24,7 @@ export VLLM_ENABLE_V1_MULTIPROCESSING=0
 # uv sync --group gpu 
 
 
-cd evals/olmes/oe_eval/dependencies/safety
+cd olmes/oe_eval/dependencies/safety
 bash install.sh
 
 

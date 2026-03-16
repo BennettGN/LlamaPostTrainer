@@ -26,7 +26,7 @@ Set up your Python environment with the required dependencies:
 
 ```bash
 # Clone the repository
-git clone https://github.com/shocheen/cse-5525-spring-2026-default-project.git
+git clone --recurse-submodules https://github.com/shocheen/cse-5525-spring-2026-default-project.git
 cd cse-5525-spring-2026-default-project
 
 # Create and activate a virtual environment
@@ -86,6 +86,8 @@ Your model will be evaluated on the following benchmarks:
 cd evals/olmes
 
 # Install with uv (recommended)
+export CC=gcc
+export CXX=g++
 uv sync
 uv sync --group gpu  # for GPU/vLLM support
 
@@ -102,7 +104,7 @@ To this code on OSC, please replace `xxxx` in `run_eval.sh` with the correct pro
 Use the provided evaluation script:
 
 ```bash
-cd evals
+cd ../
 bash run_eval.sh
 ```
 
