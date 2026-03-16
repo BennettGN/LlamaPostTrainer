@@ -16,14 +16,6 @@ export OPENAI_API_KEY="sk-dummy-not-used"
 export VLLM_ENABLE_V1_MULTIPROCESSING=0
 
 
-
-
-# git clone https://github.com/owos/olmes.git
-# cd olmes
-
-# uv sync --group gpu 
-
-
 cd olmes/oe_eval/dependencies/safety
 bash install.sh
 
