@@ -26,7 +26,7 @@ Set up your Python environment with the required dependencies:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/shocheen/cse-5525-spring-2026-default-project.git
 cd cse-5525-spring-2026-default-project
 
 # Create and activate a virtual environment
@@ -34,7 +34,7 @@ python -m venv .venv
 source .venv/bin/activate
 
 # Install dependencies (adjust based on your requirements)
-pip install torch transformers datasets accelerate
+uv pip install tinker
 ```
 
 ### 2. Training
@@ -44,11 +44,17 @@ We provide three template files for different training approaches:
 #### Supervised Fine-Tuning (SFT)
 Implement your SFT training logic in `train_sft.py`. This is the standard approach for instruction-tuning language models.
 
+An example of how to do this has already been provider by Tinker for you [here](https://github.com/thinking-machines-lab/tinker-cookbook/tree/main/tinker_cookbook/recipes/chat_sl)
+
 #### Reward Modeling (RM)
 Implement your reward model training in `train_rm.py`. This trains a model to predict human preferences.
 
+An example of how to do this has already been provider by Tinker for you [here](https://github.com/thinking-machines-lab/tinker-cookbook/tree/main/tinker_cookbook/recipes/preference/rlhf)
+
 #### Preference Optimization (PREF)
 Implement your preference optimization (e.g., DPO, PPO) in `train_pref.py`. This aligns the model using preference data.
+
+An example of how to do this has already been provider by Tinker for you [here](https://github.com/thinking-machines-lab/tinker-cookbook/tree/main/tinker_cookbook/recipes/preference)
 
 Each template provides a basic class structure. You should:
 1. Complete the `train()` method with your training loop
@@ -70,6 +76,7 @@ Your model will be evaluated on the following benchmarks:
 | **IFEval** | Instruction following evaluation |
 | **MBPP** | Mostly Basic Python Problems (code generation) |
 | **HarmBench** | Safety and harmfulness evaluation |
+| **XSTest** | Safety and harmfulness evaluation |
 
 ### Running Evaluations
 

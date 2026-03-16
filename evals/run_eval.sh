@@ -1,14 +1,21 @@
 #!/bin/bash
 
 #This part is need for OSC users
+source /fs/scratch/xxxx/${USER}/experiments/TA/.venv/bin/activate
 export CC=gcc
 export CXX=g++
-export TRITON_CACHE_DIR=/fs/scratch/xxx/${USER}/triton_cache
+export TRITON_CACHE_DIR=/fs/scratch/xxxx/${USER}/triton_cache
 
 
-export UV_CACHE_DIR=/fs/scratch/xxx/owos/.cache/uv  #control your uv caches
+export UV_CACHE_DIR=/fs/scratch/xxxx/${USER}/.cache/uv  #control your uv caches
 
+# Dummy key to prevent import error in safety-eval (WildGuard doesn't actually use it)
 export OPENAI_API_KEY="sk-dummy-not-used"
+
+# Disable vLLM V1 multiprocessing so EngineCore runs inline in the spawned subprocess
+# rather than forking a grandchild process that loses CUDA visibility on SLURM
+export VLLM_ENABLE_V1_MULTIPROCESSING=0
+
 
 
 
@@ -18,9 +25,8 @@ export OPENAI_API_KEY="sk-dummy-not-used"
 # uv sync --group gpu 
 
 
-# cd evals/olmes/oe_eval/dependencies/safety
-# uv pip install -e safety-eval 
-# uv pip install -r safety-eval/requirements.txt
+cd evals/olmes/oe_eval/dependencies/safety
+bash install.sh
 
 
 
@@ -29,10 +35,8 @@ dataset_name=(
     "mbpp"
     "ifeval"
     "xstest"
-    # Local-model safety evals (no OpenAI required):
-    # "harmbench::wildguard_reasoning_answer"
-    # "xstest::wildguard_reasoning_answer"
-    # "toxigen::tiny"  
+    "harmbench::default"
+    "xstest::default"
 
 )
 model_path=allenai/OLMo-2-0425-1B-SFT
