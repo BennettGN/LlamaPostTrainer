@@ -95,6 +95,9 @@ pip install -e ".[gpu]"  # for GPU support
 ```
 
 2. **Run evaluations:**
+You can decide to run your evaluations on Tinker or on OSC. If you decide to use Tinker for evaluation, you will be responsible to porting this code evaluation harness into Tinker for your usage.
+
+To this code on OSC, please replace `xxxx` in `run_eval.sh` with the correct project.
 
 Use the provided evaluation script:
 
