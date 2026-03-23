@@ -1,0 +1,17 @@
+(Phase 1 SFT)
+train_sft:
+- Validate tinker + hugging face connection works
+- run SFT and save final LoRa checkpoint
+
+(Phase 2: Reward Modeling)
+train_rm:
+- Copy Tinker API authentication and initialization from SFT
+- Implement new dataloader that extracts chosen and rejected sequences for reward Modeling
+- Adapt the tinker_cookbook/recipes/preference/rlhf recipe to calculate the reward difference between chosen and rejected response
+
+Testing (Parallel task):
+- Run evaluation suite to generate predictions.jsonl (See readme)
+
+(Phase 3: DPO):
+train_pref:
+(Will discuss once these portions are completed)
