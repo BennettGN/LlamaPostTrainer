@@ -1,30 +1,30 @@
 # configs/hyper_params_llama.yaml
 
-# Base Model configurations shared across all phases
+# CHANGE TO LATEST MODEL CHECKPOINT
+latest_model_checkpoint_uri: "tinker://e519842e-e3ac-5d00-b943-f0e1c7e7fcbb:train:0/weights/sft_final"
+
 model:
- base_model_path: "meta-llama/Llama-3.2-1B"
- base_model_response_template: "<|start_header_id|>assistant<|end_header_id|>\n\n" #Add Response template here, different for each model
- 
-max_seq_length: 1024
+  base_model_path: "meta-llama/Llama-3.2-1B"
+  base_model_response_template: "<|start_header_id|>assistant<|end_header_id|>"
+  max_seq_length: 4096
 
 # Phase 1: Supervised Fine-Tuning (SFT)
 sft:
   dataset_path: "allenai/tulu-3-sft-olmo-2-mixture"
   output_dir: "./checkpoints/sft_llama_1b"
   
-  # Hyperparameters
-  num_epochs: 3
-  batch_size: 4
-  learning_rate: 2.0e-5  # Standard for 1B parameter SFT
+  num_epochs: 1
+  batch_size: 16
+  gradient_accumulation_steps: 16 
+  
+  learning_rate: 2.0e-5
   warmup_steps: 100
   logging_steps: 50
   
-  # LoRA specific
   lora_rank: 16
   lora_alpha: 32
   lora_dropout: 0.05
-
-  load_full_dataset: true
+  load_full_dataset: false
 
 # Phase 2: Reward Modeling (RM)
 # RM requires predicting a scalar score for responses.
