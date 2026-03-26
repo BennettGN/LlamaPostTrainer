@@ -29,7 +29,7 @@ class TinkerSFTTrainer:
         print(f"Requesting remote LoRA session for {model_id}...")
         self.training_client = self.service_client.create_lora_training_client(
             base_model=model_id,
-            rank=self.training_args.get("lora_rank", 16)
+            rank=self.training_args.get("lora_rank", 8)
         )
 
     def _prepare_dataloaders(self):
@@ -112,7 +112,6 @@ class TinkerSFTTrainer:
 
         print("Starting SFT Training via Tinker API...")
         
-        # === NEW: Graceful Exit Wrapper ===
         try:
             for epoch in range(num_epochs):
                 print(f"--- Starting Epoch {epoch + 1}/{num_epochs} ---")
@@ -177,7 +176,6 @@ class TinkerSFTTrainer:
                 print(f"Epoch {epoch + 1} completed | Avg Train Loss: {total_train_loss/len(train_loader):.4f}")
 
         except KeyboardInterrupt:
-            # === NEW: Rescue logic on Ctrl+C ===
             print("\n\n[WARNING] Training interrupted by user (Ctrl+C)!")
             print("Attempting to rescue and save current model state...")
             rescue_name = f"sft_RESCUE_step{step}"
@@ -188,6 +186,7 @@ class TinkerSFTTrainer:
         checkpoint_name = "sft_final_adapter"
         print(f"Compiling and saving LoRA adapter to Tinker cloud as '{checkpoint_name}'...")
         future = self.training_client.save_weights_for_sampler(name=checkpoint_name)
+        self.training_client.save_state(name="sft_final_adapter")
         saved_path = future.result().path
         print(f"SUCCESS! Adapter saved to: {saved_path}")
 
