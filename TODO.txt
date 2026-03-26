@@ -15,7 +15,3 @@ Testing (Parallel task):
 (Phase 3: DPO):
 train_pref:
 (Will discuss once these portions are completed)
-
-
-
-sinteractive -A PAS3272 -N 1 -c 4 -g 1
