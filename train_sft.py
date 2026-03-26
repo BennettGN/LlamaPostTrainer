@@ -189,7 +189,7 @@ class TinkerSFTTrainer:
         future = self.training_client.save_weights_for_sampler(name=checkpoint_name)
         self.training_client.save_state(name="sft_final_adapter")
         saved_path = future.result().path
-        print(f"SUCCESS! Adapter saved to: {saved_path}")
+        print(f"Success! Adapter saved to: {saved_path}")
 
 if __name__ == "__main__":
     if "TINKER_API_KEY" not in os.environ:
