@@ -15,7 +15,7 @@ sft:
   output_dir: "./checkpoints/sft_llama_1b"
   
   num_epochs: 1
-  batch_size: 16
+  batch_size: 32
   gradient_accumulation_steps: 16 
   
   learning_rate: 2.0e-5
@@ -35,11 +35,11 @@ dpo:
 
   # RM requires a smaller learning rate than SFT
   num_epochs: 1
-  batch_size: 16
-  gradient_accumulation_steps: 64
+  gradient_accumulation_steps: 32
   learning_rate: 5.0e-7
   warmup_steps: 50
   logging_steps: 50
+  micro_batch_size: 64
 
   # LoRA specific
   lora_rank: 8      # Often smaller rank is enough for RM
