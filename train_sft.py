@@ -179,8 +179,9 @@ class TinkerSFTTrainer:
             print("\n\n[WARNING] Training interrupted by user (Ctrl+C)!")
             print("Attempting to rescue and save current model state...")
             rescue_name = f"sft_RESCUE_step{step}"
-            self.training_client.save_weights_for_sampler(name=rescue_name)
-            print(f"Rescue complete. Saved as: {rescue_name}")
+            future = self.training_client.save_state(name=rescue_name)
+            saved_path = future.result().path
+            print(f"Rescue complete. Saved as: {saved_path}")
             return 
             
         checkpoint_name = "sft_final_adapter"
