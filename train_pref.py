@@ -61,8 +61,6 @@ class PREFTrainer:
         base_lr = float(self.training_args.get("learning_rate", 2e-5))
         dpo_beta = float(self.training_args.get("beta", 0.1))
         
-        # Batch size is implicit in the dataset mapping below, calculate total steps
-        batch_size = 2 # 1 chosen + 1 rejected pair per dataset iteration
         num_training_steps = (len(self.train_dataset) // accum_steps) * num_epochs
         
         # Dummy optimizer trick to utilize huggingface's built-in LR scheduler
@@ -114,32 +112,26 @@ class PREFTrainer:
                     rejected_ref_logprob_seqs = [all_ref_logprob_seqs[1]]
 
                     def dpo_loss_fn(data: list[tinker.Datum], logprobs_list: list[torch.Tensor]) -> tuple[torch.Tensor, dict[str, float]]:
-                        # 1. Extract raw logprobs from the training policy (Length 606)
-                        raw_policy_chosen = logprobs_list[0]
-                        raw_policy_rejected = logprobs_list[1]
+                        # 1. Extract logprobs
+                        policy_chosen = logprobs_list[0][1:]
+                        policy_rejected = logprobs_list[1][1:]
+                        ref_chosen = chosen_ref_logprob_seqs[0]
+                        ref_rejected = rejected_ref_logprob_seqs[0]
 
-                        # 2. Extract reference logprobs (Length 605 - already sliced in the train loop)
-                        ref_chosen_logprob_seq = chosen_ref_logprob_seqs[0]
-                        ref_rejected_logprob_seq = rejected_ref_logprob_seqs[0]
+                        # 2. Extract weights
+                        weights_chosen = torch.tensor(data[0].loss_fn_inputs["weights"].data, dtype=torch.float32)[1:]
+                        weights_rejected = torch.tensor(data[1].loss_fn_inputs["weights"].data, dtype=torch.float32)[1:]
 
-                        # 3. Get raw weights (Length 606)
-                        weights_chosen_raw = torch.tensor(data[0].loss_fn_inputs["weights"].data, dtype=torch.float32)
-                        weights_rejected_raw = torch.tensor(data[1].loss_fn_inputs["weights"].data, dtype=torch.float32)
+                        # 3. Calculate Token Counts (to avoid division by zero)
+                        n_chosen = weights_chosen.sum().clamp(min=1.0)
+                        n_rejected = weights_rejected.sum().clamp(min=1.0)
 
-                        # 4. ALIGN EVERYTHING TO LENGTH 605
-                        # We slice [1:] to skip the first token which has no prediction
-                        policy_chosen = raw_policy_chosen[1:]
-                        policy_rejected = raw_policy_rejected[1:]
-                        weights_chosen = weights_chosen_raw[1:]
-                        weights_rejected = weights_rejected_raw[1:]
+                        # 4. Normalize Logprobs (avoiding cumulative calculation)
+                        chosen_logprobs = [(torch.dot(policy_chosen.float(), weights_chosen.float()) / n_chosen)]
+                        chosen_ref_logprobs = [(torch.dot(ref_chosen.float(), weights_chosen.float()) / n_chosen)]
 
-                        # 5. Perform the Dot Products (Now all are 605)
-                        # Using .sum() after multiplication is often more stable than torch.dot
-                        chosen_logprobs = [(policy_chosen * weights_chosen).sum()]
-                        chosen_ref_logprobs = [(ref_chosen_logprob_seq * weights_chosen).sum()]
-
-                        rejected_logprobs = [(policy_rejected * weights_rejected).sum()]
-                        rejected_ref_logprobs = [(ref_rejected_logprob_seq * weights_rejected).sum()]
+                        rejected_logprobs = [(torch.dot(policy_rejected.float(), weights_rejected.float()) / n_rejected)]
+                        rejected_ref_logprobs = [(torch.dot(ref_rejected.float(), weights_rejected.float()) / n_rejected)]
 
                         return compute_dpo_loss(
                             chosen_logprobs, 
@@ -149,11 +141,10 @@ class PREFTrainer:
                             dpo_beta
                         )
 
-                    # 4. Execute Tinker Forward Backward using the closure
                     fwdbwd_future = self.training_client.forward_backward_custom(tinker_data, dpo_loss_fn)
                     fwdbwd_result = fwdbwd_future.result()
                     
-                    # 5. Track Metrics & Accumulate Gradients
+                    # Track Metrics & Accumulate Gradients
                     loss = fwdbwd_result.metrics.get('loss:sum', 0.0)
                     total_train_loss += loss
                     
@@ -182,13 +173,14 @@ class PREFTrainer:
             print("\n\n[WARNING] Training interrupted by user (Ctrl+C)!")
             print("Attempting to rescue and save current model state...")
             rescue_name = f"dpo_RESCUE_step{step}"
-            self.training_client.save_weights_for_sampler(name=rescue_name)
+            future = self.training_client.save_state(name=rescue_name)
+            saved_path = future.result().path
             print(f"Rescue complete. Saved as: {rescue_name}")
             return 
             
         checkpoint_name = "dpo_final_adapter"
         print(f"Compiling and saving LoRA adapter to Tinker cloud as '{checkpoint_name}'...")
-        future = self.training_client.save_weights_for_sampler(name=checkpoint_name)
+        future = self.training_client.save_state(name=checkpoint_name)
         saved_path = future.result().path
         print(f"SUCCESS! Adapter saved to: {saved_path}")
 
@@ -197,7 +189,6 @@ def format_dpo_dataset(example, tokenizer):
     """
     Ensures all tensors are exactly length N to satisfy Tinker's internal validator.
     """
-    # ... (Keep your prompt/chosen/rejected text extraction the same) ...
     if "prompt" in example:
         prompt_text = tokenizer.apply_chat_template(example["prompt"], tokenize=False, add_generation_prompt=True)
         chosen_text = tokenizer.apply_chat_template(example["prompt"] + example["chosen"], tokenize=False, add_generation_prompt=False)
@@ -208,20 +199,18 @@ def format_dpo_dataset(example, tokenizer):
         chosen_text = tokenizer.apply_chat_template(example["chosen"], tokenize=False, add_generation_prompt=False)
         rejected_text = tokenizer.apply_chat_template(example["rejected"], tokenize=False, add_generation_prompt=False)
 
-    # 1. Tokenize (Length N)
+    # 1. Tokenize
     prompt_ids = tokenizer(prompt_text, truncation=True, max_length=1024)["input_ids"]
     prompt_len = len(prompt_ids)
 
     chosen_ids = tokenizer(chosen_text, truncation=True, max_length=1024)["input_ids"]
     rejected_ids = tokenizer(rejected_text, truncation=True, max_length=1024)["input_ids"]
 
-    # 2. Create Weights (Length N)
-    # We use 0.0 for all prompt tokens and 1.0 for all response tokens.
+    # 2. Create Weights
     chosen_weights = [0.0] * prompt_len + [1.0] * (len(chosen_ids) - prompt_len)
     rejected_weights = [0.0] * prompt_len + [1.0] * (len(rejected_ids) - prompt_len)
 
-    # 3. Validation Check: Ensure lengths are perfectly consistent
-    # If a mismatch happened during tokenizer truncation, this fixes it
+    # 3. Validation Check: Ensure lengths are consistent
     chosen_weights = chosen_weights[:len(chosen_ids)]
     rejected_weights = rejected_weights[:len(rejected_ids)]
 
@@ -256,6 +245,7 @@ if __name__ == "__main__":
     
     print(f"Loading tokenizer for {model_id}...")
     tokenizer = AutoTokenizer.from_pretrained(model_id)
+    # Lama chat template
     tokenizer.chat_template = "{% for message in messages %}<|start_header_id|>{{ message['role'] }}<|end_header_id|>\n\n{{ message['content'] }}<|eot_id|>{% endfor %}"
     
     if tokenizer.pad_token is None:
