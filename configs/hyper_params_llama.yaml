@@ -2,7 +2,7 @@
 
 # CHANGE TO LATEST MODEL CHECKPOINT FOR DPO INTEGRATION
 # Required format tinker://xxx/state/xxxx
-latest_model_checkpoint_uri: "tinker://43886057-4929-5ecb-bca1-b137b27f3ec8:train:0/weights/sft_final_adapter"
+latest_model_checkpoint_uri: "tinker://22c2a925-911c-5e6e-bb78-cc12d616f290:train:0/weights/sft_final_adapter"
 
 model:
   base_model_path: "meta-llama/Llama-3.2-1B"
@@ -15,7 +15,7 @@ sft:
   output_dir: "./checkpoints/sft_llama_1b"
   
   num_epochs: 1
-  batch_size: 32
+  batch_size: 64
   gradient_accumulation_steps: 16 
   
   learning_rate: 2.0e-5
