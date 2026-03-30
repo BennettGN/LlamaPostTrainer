@@ -211,3 +211,6 @@ __marimo__/
 gradio_cached_examples/
 .gradio/
 flagged/
+
+# Merged llama model
+merged_llama_model/
