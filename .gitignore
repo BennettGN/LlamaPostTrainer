@@ -206,3 +206,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+#Gradio
+gradio_cached_examples/
+.gradio/
+flagged/

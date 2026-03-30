@@ -182,4 +182,7 @@ If you have questions about the project, please:
 2. Attend office hours
 3. Email the course TA (Abraham) or Instructor (Sachin)
 
-Good luck!
+
+- To run chat.py:
+- Install gradio
+- run on osc node and click on live/global link.
