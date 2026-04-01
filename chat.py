@@ -3,7 +3,7 @@ import torch
 from threading import Thread
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
 
-model_path = "BennettGN/SFTAllenPlus"
+model_path = "BennettGN/LLamaSFT3.2"
 
 tokenizer = AutoTokenizer.from_pretrained(model_path)
 model = AutoModelForCausalLM.from_pretrained(
