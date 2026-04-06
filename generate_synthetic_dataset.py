@@ -36,7 +36,7 @@ if __name__ == "__main__":
     
     sampling_params = SamplingParams(
         temperature=0.6, 
-        max_tokens=512, 
+        max_tokens=1024, 
         n=chains_of_reasoning 
     )
     
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             if is_correct and not found_correct:
                 correct_seq = response_text.strip()
                 found_correct = True
-            elif not is_correct and not found_incorrect:
+            elif not is_correct:
                 incorrect_seq = response_text.strip()
                 found_incorrect = True
 
