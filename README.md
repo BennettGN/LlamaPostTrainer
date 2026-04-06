@@ -186,3 +186,6 @@ If you have questions about the project, please:
 - To run chat.py:
 - Install gradio
 - run on osc node and click on live/global link.
+
+Most recent synthetic dpo dataset:
+https://huggingface.co/datasets/BennettGN/Llama-Chains-of-reasoning-synthetic-dpo-dataset-gsm8k
