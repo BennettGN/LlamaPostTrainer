@@ -39,26 +39,26 @@ def main():
         task_type="CAUSAL_LM",
     )
 
-    dataset = load_dataset("allenai/olmo-2-0425-1b-preference-mix", split="train")
+    dataset = load_dataset("BennettGN/LLama-SFT-Aligned-DPO-Synthetic-GSM8K", split="train")
     print(dataset[0]['chosen'])
     print(dataset[0]['rejected'])
     training_args = DPOConfig(
-        output_dir="./dpo_llama3_2_1b_output",
-        beta=0.1,                                
-        per_device_train_batch_size=64,
-        gradient_accumulation_steps=4,   
-        learning_rate=5e-6,
-        lr_scheduler_type="cosine",
-        max_length=512,
-        num_train_epochs=1,
-        logging_steps=10,
-        save_steps=100,
-        bf16=True, 
-        gradient_checkpointing=True,
-        optim="paged_adamw_32bit",
-        dataset_num_proc=8,
-        report_to="none"
-    )
+            output_dir="./dpo_g8_llama_instruct_result",
+            beta=0.1,                                
+            per_device_train_batch_size=4,        # <--- DROP THIS to 2 or 4
+            gradient_accumulation_steps=16,       # <--- RAISE THIS (4 * 16 = effective batch size of 64) 
+            learning_rate=5e-6,
+            lr_scheduler_type="cosine",
+            max_length=512,
+            num_train_epochs=1,
+            logging_steps=10,
+            save_steps=100,
+            bf16=True, 
+            gradient_checkpointing=True,
+            optim="paged_adamw_32bit",
+            dataset_num_proc=8,
+            report_to="none"
+        )
 
     # 7. Initialize DPOTrainer
     trainer = DPOTrainer(
