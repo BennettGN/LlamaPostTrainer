@@ -215,3 +215,4 @@ flagged/
 merged_llama_model/
 evals/run_eval.sh
 dpo_g8_llama_instruct_result/*
+evals/run_eval.sh
