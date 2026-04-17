@@ -5,7 +5,7 @@ from transformers import AutoTokenizer
 from vllm import LLM, SamplingParams
 
 def formatDataset():
-    dataset = load_dataset("openai/gsm8k", "main", split="train")
+    dataset = load_dataset("apple/GSM-Symbolic", name="main", split="test")
     messages, expectedResponses = [], []
     for row in dataset:
         messages.append({"role": "user", "content": row['question']})
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     chains_of_reasoning = 8 
     
     sampling_params = SamplingParams(
-        temperature=0.6, 
+        temperature=0.1, 
         max_tokens=1024, 
         n=chains_of_reasoning 
     )
@@ -52,7 +52,7 @@ if __name__ == "__main__":
     
     generated_dataset = []
     safe_model_id = model_id.replace("/", "-")
-    file_name = f"{safe_model_id}_synthetic_dpo_bennettgn-instruct-dataset_gsm-strict-regex.jsonl"
+    file_name = f"{safe_model_id}_synthetic_dpo_bennettgn-sft-dataset_gsm-symbolic.jsonl"
 
     # 5. Process the outputs
     for i, output in enumerate(outputs):
