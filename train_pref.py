@@ -1,27 +1,27 @@
 import torch
-from datasets import load_dataset,get_dataset_split_names
+from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import LoraConfig
 from trl import DPOConfig, DPOTrainer
 
-def main():
+def format_llama3_dpo(example):
+    prompt = f"<|start_header_id|>system<|end_header_id|>\n\nCutting Knowledge Date: December 2023\nToday Date: 16 Apr 2026\n\n<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{example['prompt']}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
 
-    model_id = "BennettGN/LLamaSFT3.2"
+    chosen = " " + example['chosen'].lstrip() + "<|eot_id|>"
+    rejected = " " + example['rejected'].lstrip() + "<|eot_id|>"
     
-    tokenizer = AutoTokenizer.from_pretrained(model_id)
+    return {
+        "prompt": prompt,
+        "chosen": chosen,
+        "rejected": rejected
+    }
+
+def main():
+    model_id = "/users/PAS3167/bennettgn/ondemand/finalProject/LlamaPostTrainer/sft_merged"
+    
+    tokenizer = AutoTokenizer.from_pretrained(model_id, fix_mistral_regex=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
-
-    if tokenizer.chat_template is None:
-        tokenizer.chat_template = (
-            "{% set loop_messages = messages %}"
-            "{% for message in loop_messages %}"
-            "{% set content = '<|start_header_id|>' + message['role'] + '<|end_header_id|>\n\n'+ message['content'] | trim + '<|eot_id|>' %}"
-            "{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}"
-            "{{ content }}"
-            "{% endfor %}"
-            "{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
-        )
 
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
@@ -39,28 +39,29 @@ def main():
         task_type="CAUSAL_LM",
     )
 
-    dataset = load_dataset("BennettGN/LLama-SFT-Aligned-DPO-Synthetic-GSM8K", split="train")
-    print(dataset[0]['chosen'])
-    print(dataset[0]['rejected'])
+    dataset = load_dataset("BennettGN/Qwen-Chains-of-reasoning-synthetic-dpo-dataset-gsm-symbolic", split="train")
+    
+    print("Formatting dataset for Llama-3 BPE and Instruct tags...")
+    dataset = dataset.map(format_llama3_dpo)
+    
     training_args = DPOConfig(
-            output_dir="./dpo_g8_llama_instruct_result",
-            beta=0.1,                                
-            per_device_train_batch_size=4,        # <--- DROP THIS to 2 or 4
-            gradient_accumulation_steps=16,       # <--- RAISE THIS (4 * 16 = effective batch size of 64) 
-            learning_rate=5e-6,
-            lr_scheduler_type="cosine",
-            max_length=512,
-            num_train_epochs=1,
-            logging_steps=10,
-            save_steps=100,
-            bf16=True, 
-            gradient_checkpointing=True,
-            optim="paged_adamw_32bit",
-            dataset_num_proc=8,
-            report_to="none"
-        )
+        output_dir="./dpo_g8_llama_instruct_result",
+        beta=0.1,                                
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=16,      
+        learning_rate=5e-6,
+        lr_scheduler_type="cosine",
+        max_length=1024,            
+        num_train_epochs=5,
+        logging_steps=10,
+        save_steps=100,
+        bf16=True, 
+        gradient_checkpointing=True,
+        optim="paged_adamw_32bit",
+        dataset_num_proc=8,
+        report_to="none"
+    )
 
-    # 7. Initialize DPOTrainer
     trainer = DPOTrainer(
         model=model,
         ref_model=None,
@@ -70,10 +71,9 @@ def main():
         peft_config=peft_config,
     )
 
-    # 8. Train and Save
     print("Starting DPO training...")
     trainer.train()
-    trainer.save_model("./final_llama3_2_1b_dpo")
+    trainer.save_model("./final_llama3_2_1b_dpo_qwen_instructed")
     print("Training complete and model saved.")
 
 if __name__ == "__main__":
